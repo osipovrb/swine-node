@@ -3,7 +3,13 @@ import { BaseEntity } from './BaseEntity.js';
 
 export class SwineEntity extends BaseEntity<SwineEntity> {
   @Field(FieldTypeEnum.TEXT)
-  name?: string;
+  name!: string;
+
+  @Field(FieldTypeEnum.TEXT)
+  userId!: string;
+
+  @Field(FieldTypeEnum.TEXT)
+  roomId!: string;
 
   constructor(payload?: Partial<SwineEntity>) {
     super()

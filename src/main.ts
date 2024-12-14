@@ -2,7 +2,7 @@ import { DotenvConfig } from './adapters/implementations/config/DotenvConfig.js'
 import { TelegramIo } from './adapters/implementations/io/TelegramIo.js';
 import { LoggerFactory } from './adapters/implementations/logger/LoggerFactory.js';
 import { SwineStorage } from './adapters/implementations/storage/sqlite/SwineStorage.js';
-import { AppService } from './services/AppService.js';
+import { SwineFather } from './adapters/implementations/swine-father/SwineFather.js';
 
 async function main() {
   const logger = LoggerFactory('SwineFather');
@@ -11,11 +11,9 @@ async function main() {
 
   const config = new DotenvConfig();
   const swineStorage = new SwineStorage(config);
-  const io = new TelegramIo(config);
+  const swineFather = new SwineFather(config, swineStorage);
 
-  const appService = new AppService(config, swineStorage);
-
-  await appService.run();
+  new TelegramIo(config, swineFather);
 }
 
 main().catch((err) => {

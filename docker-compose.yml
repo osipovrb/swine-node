@@ -4,7 +4,7 @@ services:
     container_name: swinefather
     environment:
       SQLITE_DATABASE_PATH: ./swines.sqlite3
-      TELEGRAM_BOT_TOKEN: 8121532653:AAGeptHap44D2slTFJ1dIUmARHBqsY4_MBs
+      TELEGRAM_BOT_TOKEN: 
     ports:
       - '3000:3000'
     volumes:

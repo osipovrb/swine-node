@@ -13,6 +13,6 @@ export class AppService {
   ) {}
 
   async run(): Promise<void> {
-    this.logger.log('Swinebot is running...');
+    //
   }
 }

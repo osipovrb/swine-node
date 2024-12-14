@@ -20,8 +20,9 @@ export class ConsoleLogger implements ILogger {
   }
 
   private buildMessage(message: unknown): string {
-    const time = new Date().toLocaleDateString();
-    const text = typeof message === 'string' ? message : JSON.stringify(message);
+    const time = new Date().toISOString().replace('T', ' @ ').replace('Z', '');
+    const text =
+      typeof message === 'string' ? message : JSON.stringify(message);
 
     return this.context
       ? `${time} [${this.context}]: ${text}`

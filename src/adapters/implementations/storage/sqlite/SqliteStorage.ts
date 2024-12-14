@@ -6,13 +6,12 @@ import { IFieldData } from '../../../../decorators/Field.js';
 import { IStorage } from '../../../interfaces/IStorage.js';
 import { IConfig } from '../../../interfaces/IConfig.js';
 import { ILogger } from '../../../interfaces/ILogger.js';
-import { LoggerFactory } from '../../logger/LoggerFactory.js';
 
 export abstract class SqliteStorage<T extends BaseEntity<T>>
   implements IStorage<T>
 {
   protected db: InstanceType<typeof Database>;
-  private readonly logger: ILogger = LoggerFactory(SqliteStorage.name);
+  protected abstract readonly logger: ILogger;
 
   constructor(protected config: IConfig) {
     const dbFilePath = config.getOrThrow('SQLITE_DATABASE_PATH');

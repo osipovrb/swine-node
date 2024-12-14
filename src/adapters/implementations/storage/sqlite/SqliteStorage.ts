@@ -103,7 +103,9 @@ export abstract class SqliteStorage<T extends BaseEntity<T>>
   }
 
   async search(criteria: Partial<T>): Promise<T[]> {
-    const where = Object.keys(criteria).map((key) => `${key} = ?`);
+    const where = Object.keys(criteria)
+      .map((key) => `${key} = ?`)
+      .join(' AND ');
     const query = `SELECT * FROM ${this.tableName} WHERE ${where}`;
     const stmt = this.db.prepare(query);
     const result = stmt.all(Object.values(criteria)) as T[];
@@ -112,21 +114,21 @@ export abstract class SqliteStorage<T extends BaseEntity<T>>
   }
 
   async update(id: number, entity: T): Promise<T | null> {
-    const fieldNames = this.fields
-      .filter(({ name }) => !['createdAt', 'updatedAt'].includes(name))
-      .map(({ name }) => name);
+    const fieldNames = Object.keys(entity);  
 
-    fieldNames.push('updatedAt');
+    const placeholders = fieldNames.map((fieldName) => `${fieldName} = ?`);
+    const payload = Object.values(entity);
 
-    const setClause = fieldNames
-      .map((fieldName) => `${fieldName} = ?`)
-      .join(', ');
+    if (!fieldNames.includes('updatedAt')) {
+      placeholders.push('updatedAt = ?');
+      payload.push(new Date().toISOString());
+    }
+
+    const setClause = placeholders.join(', ')
 
     const query = `UPDATE ${this.tableName} SET ${setClause} WHERE id = ?`;
 
-    const now = new Date().toISOString();
-    const payload = this.fields.map((field) => (entity as any)[field.name]);
-    payload.push(now, id);
+    payload.push(id);
 
     const stmt = this.db.prepare(query);
     const result = stmt.run(...payload);

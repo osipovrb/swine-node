@@ -1,16 +1,17 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
+    "target": "esnext",
+    "module": "esnext",
     "moduleResolution": "node",
     "strict": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "outDir": "./dist",
     "rootDir": "./src",
     "resolveJsonModule": true,
     "experimentalDecorators": true,
-    "lib": ["es2020", "dom"],
+    "emitDecoratorMetadata": true,
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]

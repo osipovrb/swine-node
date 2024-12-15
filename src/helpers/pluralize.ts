@@ -1,6 +1,7 @@
 export type PluralizeWords = [string, string, string];
 
 export const PLURALIZE_DAYS: PluralizeWords = ['день', 'дня', 'дней'];
+export const PLURALIZE_TIMES: PluralizeWords = ['раз', 'раза', 'раз'];
 
 export function pluralize(count: number, words: PluralizeWords): string {
   const cases = [2, 0, 1, 1, 1, 2];

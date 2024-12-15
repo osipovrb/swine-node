@@ -33,6 +33,10 @@ export class TelegramIo implements IIo {
       await this.myCommand(String(msg.chat.id), String(msg.from?.id));
     });
 
+    this.bot.onText(/\/grow/, async (msg) => {
+      await this.growCommand(String(msg.chat.id), String(msg.from?.id));
+    });
+
     this.logger.log('✓ Started');
   }
 
@@ -53,6 +57,16 @@ export class TelegramIo implements IIo {
   async myCommand(roomId: string, userId: string): Promise<void> {
     try {
       const reply = await this.swineFather.my(roomId, userId);
+      await this.publicReply(roomId, userId, reply);
+    } catch (e: unknown) {
+      this.logger.error(JSON.stringify(e));
+      await this.write(roomId, 'Что-то пошло не так...');
+    }
+  }
+
+  async growCommand(roomId: string, userId: string): Promise<void> {
+    try {
+      const reply = await this.swineFather.grow(roomId, userId);
       await this.publicReply(roomId, userId, reply);
     } catch (e: unknown) {
       this.logger.error(JSON.stringify(e));

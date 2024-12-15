@@ -11,6 +11,9 @@ export class SwineEntity extends BaseEntity<SwineEntity> {
   @Field(FieldTypeEnum.TEXT)
   roomId!: string;
 
+  @Field(FieldTypeEnum.INTEGER)
+  weight!: number;
+
   constructor(payload?: Partial<SwineEntity>) {
     super()
     Object.assign(this, payload);

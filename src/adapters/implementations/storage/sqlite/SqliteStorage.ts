@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import 'reflect-metadata';
 
 import { BaseEntity } from '../../../../entities/BaseEntity.js';
-import { IFieldData } from '../../../../decorators/Field.js';
+import { FieldTypeEnum, IFieldData } from '../../../../decorators/Field.js';
 import { IStorage } from '../../../interfaces/IStorage.js';
 import { IConfig } from '../../../interfaces/IConfig.js';
 import { ILogger } from '../../../interfaces/ILogger.js';
@@ -18,6 +18,7 @@ export abstract class SqliteStorage<T extends BaseEntity<T>>
     this.db = new Database(dbFilePath);
 
     this.createTableIfNotExists();
+    this.syncTableStructure();
   }
 
   protected abstract get tableName(): string;
@@ -57,6 +58,47 @@ export abstract class SqliteStorage<T extends BaseEntity<T>>
     }
   }
 
+  private syncTableStructure() {
+    const table = this.tableName;
+    const currentStructure = this.db
+      .prepare(`PRAGMA table_info(${this.tableName})`)
+      .all();
+
+    const currentColumns: Record<string, string> = {};
+    currentStructure.forEach((column: any) => {
+      currentColumns[column.name] = column.type;
+    });
+
+    this.fields.forEach((field) => {
+      const col = field.name;
+      const type = field.type;
+
+      if (currentColumns[col]) {
+        // column exists, check its type
+        if (currentColumns[col] !== type) {
+          // type differs, recreating column
+          this.db.prepare(`ALTER TABLE ${table} DROP COLUMN ${col}`).run();
+          this.db
+            .prepare(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`)
+            .run();
+        }
+      } else {
+        // column does not exists - create new one
+        this.db.prepare(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`).run();
+      }
+    });
+
+    // columns that exists in table structure, but not exists in this.fields
+    const columnsToDelete = Object.keys(currentColumns).filter(
+      (columnName) => !this.fields.some((field) => field.name === columnName),
+    );
+
+    // removing leftovers
+    columnsToDelete.forEach((col) => {
+      this.db.prepare(`ALTER TABLE ${table} DROP COLUMN ${col}`).run();
+    });
+  }
+
   async create<Entity>(entity: Partial<T>): Promise<Entity> {
     const fieldNames = this.fieldNames.filter(
       (field) => ['id', 'createdAt', 'updatedAt'].includes(field) === false,
@@ -64,9 +106,9 @@ export abstract class SqliteStorage<T extends BaseEntity<T>>
 
     const payload = fieldNames.map((field) => (entity as any)[field] ?? null);
 
-    const now = new Date().toISOString();
+    const now = new Date();
     fieldNames.push('createdAt', 'updatedAt');
-    payload.push(now, now);
+    payload.push(now.toISOString(), now.toISOString());
 
     const columns = fieldNames.join(', ');
     const placeholders = fieldNames.map((_) => '?').join(', ');
@@ -101,7 +143,7 @@ export abstract class SqliteStorage<T extends BaseEntity<T>>
       if (row.createdAt) {
         row.createdAt = new Date(row.createdAt);
       }
-  
+
       if (row.updatedAt) {
         row.updatedAt = new Date(row.updatedAt);
       }
@@ -116,40 +158,31 @@ export abstract class SqliteStorage<T extends BaseEntity<T>>
       .join(' AND ');
     const query = `SELECT * FROM ${this.tableName} WHERE ${where}`;
     const stmt = this.db.prepare(query);
-    const result = (stmt.all(Object.values(criteria)) as T[]).map(row => {
-      if (row.createdAt) {
-        row.createdAt = new Date(row.createdAt);
-      }
-
-      if (row.updatedAt) {
-        row.updatedAt = new Date(row.updatedAt);
-      }
-
-      return row;
-    });
+    const payload = this.castPayload(Object.values(criteria));
+    const result = this.castRows(stmt.all(payload) as T[]);
 
     return result;
   }
 
   async update(id: number, entity: T): Promise<T | null> {
-    const fieldNames = Object.keys(entity);  
+    const fieldNames = Object.keys(entity);
 
     const placeholders = fieldNames.map((fieldName) => `${fieldName} = ?`);
     const payload = Object.values(entity);
 
     if (!fieldNames.includes('updatedAt')) {
       placeholders.push('updatedAt = ?');
-      payload.push(new Date().toISOString());
+      payload.push(new Date());
     }
 
-    const setClause = placeholders.join(', ')
+    const setClause = placeholders.join(', ');
 
     const query = `UPDATE ${this.tableName} SET ${setClause} WHERE id = ?`;
 
     payload.push(id);
 
     const stmt = this.db.prepare(query);
-    const result = stmt.run(...payload);
+    const result = stmt.run(...this.castPayload(payload));
 
     if (result.changes <= 0) {
       this.logger.warn(`Update failed: ${query}. Payload: ${id}`);
@@ -168,5 +201,26 @@ export abstract class SqliteStorage<T extends BaseEntity<T>>
     }
 
     return result.changes > 0;
+  }
+
+  private castPayload(payload: unknown[]) {
+    return payload.map((el) => (el instanceof Date ? el.toISOString() : el));
+  }
+
+  private castRow(row: T): T {
+    const castedRow = { ...row } as Record<string, any>;
+
+    Object.keys(row as Record<string, any>).forEach((key) => {
+      const field = this.fields.find(({ name }) => name === key);
+      if (field?.type === FieldTypeEnum.DATE) {
+        castedRow[key] = new Date((row as Record<string, any>)[key] as string);
+      }
+    });
+
+    return castedRow as T;
+  }
+
+  private castRows(rows: T[]): T[] {
+    return rows.map((row) => this.castRow(row));
   }
 }

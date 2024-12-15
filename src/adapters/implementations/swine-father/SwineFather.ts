@@ -116,4 +116,29 @@ export class SwineFather implements ISwineFather {
 
     return format(this.dict.SWINE_GROW, swine.name, mealWeight, swineWeight);
   }
+
+  async top(roomId: string): Promise<string> {
+    const topSwines = await this.swineStorage.search(
+      [{ field: 'roomId', value: roomId }],
+      [{ field: 'weight', direction: 'DESC' }],
+    );
+
+    // no swines found in this room
+    if (topSwines.length === 0) {
+      return this.dict.SWINES_NOT_EXISTS;
+    }
+
+    // building rows
+    const badges = ['🥇', '🥈', '🥉'];
+    const topRows = topSwines.map((swine, i) =>
+      format(
+        this.dict.SWINES_TOP_ROW,
+        badges[i] ?? `${i + 1}.`,
+        swine.name,
+        swine.weight,
+      ),
+    );
+
+    return format(this.dict.SWINES_TOP, topRows.join('\n'));
+  }
 }

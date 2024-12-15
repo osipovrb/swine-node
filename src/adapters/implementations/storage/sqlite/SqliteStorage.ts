@@ -6,6 +6,7 @@ import { FieldTypeEnum, IFieldData } from '../../../../decorators/Field.js';
 import {
   IStorage,
   IStorageSearchCriteria,
+  IStorageSort,
   TStorageSearchGlue,
 } from '../../../interfaces/IStorage.js';
 import { IConfig } from '../../../interfaces/IConfig.js';
@@ -158,13 +159,22 @@ export abstract class SqliteStorage<T extends BaseEntity<T>>
 
   async search(
     criteria: IStorageSearchCriteria<T>[],
-    glue: TStorageSearchGlue = 'AND',
+    sort?: IStorageSort<T>[],
+    glue?: TStorageSearchGlue,
   ): Promise<T[]> {
     const whereClauses = criteria.map(
       ({ field, operator }) => `${String(field)} ${operator ?? '='} ?`,
     );
-    const where = whereClauses.join(` ${glue} `);
-    const query = `SELECT * FROM ${this.tableName} WHERE ${where}`;
+    const where = whereClauses.join(` ${glue ?? 'AND'} `);
+    let query = `SELECT * FROM ${this.tableName} WHERE ${where}`;
+
+    if (sort) {
+      const sortClauses = sort.map(
+        ({ field, direction }) => `${String(field)} ${direction ?? 'ASC'}`,
+      );
+      query += ` ORDER BY ${sortClauses.join(', ')}`;
+    }
+
     const stmt = this.db.prepare(query);
     const payload = this.castPayload(criteria.map(({ value }) => value));
     const result = this.castRows(stmt.all(payload) as T[]);

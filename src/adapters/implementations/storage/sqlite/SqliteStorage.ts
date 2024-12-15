@@ -93,10 +93,18 @@ export abstract class SqliteStorage<T extends BaseEntity<T>>
   async find(id: number): Promise<T | null> {
     const query = `SELECT * FROM ${this.tableName} WHERE id = ?`;
     const stmt = this.db.prepare(query);
-    const row = stmt.get(id);
+    const row = stmt.get(id) as T | null;
 
     if (!row) {
       this.logger.warn(`Find failed: ${query}. Payload: ${id}`);
+    } else {
+      if (row.createdAt) {
+        row.createdAt = new Date(row.createdAt);
+      }
+  
+      if (row.updatedAt) {
+        row.updatedAt = new Date(row.updatedAt);
+      }
     }
 
     return row ? (row as T) : null;
@@ -108,7 +116,17 @@ export abstract class SqliteStorage<T extends BaseEntity<T>>
       .join(' AND ');
     const query = `SELECT * FROM ${this.tableName} WHERE ${where}`;
     const stmt = this.db.prepare(query);
-    const result = stmt.all(Object.values(criteria)) as T[];
+    const result = (stmt.all(Object.values(criteria)) as T[]).map(row => {
+      if (row.createdAt) {
+        row.createdAt = new Date(row.createdAt);
+      }
+
+      if (row.updatedAt) {
+        row.updatedAt = new Date(row.updatedAt);
+      }
+
+      return row;
+    });
 
     return result;
   }

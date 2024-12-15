@@ -1,3 +1,4 @@
 export interface ISwineFather {
   name(roomId: string, userId: string, swineName: string): Promise<string>;
+  my(roomId: string, userId: string): Promise<string>;
 }

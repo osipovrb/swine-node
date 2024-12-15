@@ -1,4 +1,5 @@
 import { SwineEntity } from '../../../entities/SwineEntity.js';
+import { daysBetweenDates } from '../../../helpers/DaysBetweenDates.js';
 import { IConfig } from '../../interfaces/IConfig.js';
 import { ILogger } from '../../interfaces/ILogger.js';
 import { IStorage } from '../../interfaces/IStorage.js';
@@ -47,5 +48,16 @@ export class SwineFather implements ISwineFather {
     }
 
     return `теперь твоего свина зовут "${swineName}", носи новое имя с гордостью! 🐖`;
+  }
+
+  async my(roomId: string, userId: string): Promise<string> {
+    const [swine] = await this.swineStorage.search({ roomId, userId });
+
+    if (!swine) {
+      return `у тебя ещё нет свина, но ты можешь его завести прямо сейчас! Введи /name <имя_твоего_свина>`;
+    }
+
+    const swineAge = daysBetweenDates(new Date(), swine.createdAt);
+    return `твоего 🐖 зовут ${swine.name}, его возраст в днях: ${swineAge}`;
   }
 }

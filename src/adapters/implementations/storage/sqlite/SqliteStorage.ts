@@ -3,7 +3,11 @@ import 'reflect-metadata';
 
 import { BaseEntity } from '../../../../entities/BaseEntity.js';
 import { FieldTypeEnum, IFieldData } from '../../../../decorators/Field.js';
-import { IStorage } from '../../../interfaces/IStorage.js';
+import {
+  IStorage,
+  IStorageSearchCriteria,
+  TStorageSearchGlue,
+} from '../../../interfaces/IStorage.js';
 import { IConfig } from '../../../interfaces/IConfig.js';
 import { ILogger } from '../../../interfaces/ILogger.js';
 
@@ -152,13 +156,17 @@ export abstract class SqliteStorage<T extends BaseEntity<T>>
     return row ? (row as T) : null;
   }
 
-  async search(criteria: Partial<T>): Promise<T[]> {
-    const where = Object.keys(criteria)
-      .map((key) => `${key} = ?`)
-      .join(' AND ');
+  async search(
+    criteria: IStorageSearchCriteria<T>[],
+    glue: TStorageSearchGlue = 'AND',
+  ): Promise<T[]> {
+    const whereClauses = criteria.map(
+      ({ field, operator }) => `${String(field)} ${operator ?? '='} ?`,
+    );
+    const where = whereClauses.join(` ${glue} `);
     const query = `SELECT * FROM ${this.tableName} WHERE ${where}`;
     const stmt = this.db.prepare(query);
-    const payload = this.castPayload(Object.values(criteria));
+    const payload = this.castPayload(criteria.map(({ value }) => value));
     const result = this.castRows(stmt.all(payload) as T[]);
 
     return result;

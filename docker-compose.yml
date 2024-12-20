@@ -2,11 +2,3 @@ services:
   swinefather:
     build: .
     container_name: swinefather
-    environment:
-      SQLITE_DATABASE_PATH: ./swines.sqlite3
-      TELEGRAM_BOT_TOKEN: 
-    ports:
-      - '3000:3000'
-    volumes:
-      - .:/app
-      - /app/node_modules

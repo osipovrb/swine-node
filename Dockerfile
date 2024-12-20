@@ -2,9 +2,9 @@ FROM node:22.10
 
 WORKDIR /app
 
-RUN npm install -g pnpm
+COPY package.json pnpm-lock.yaml ./
 
-COPY package*.json ./
+RUN npm install -g pnpm
 
 RUN pnpm install
 
@@ -12,4 +12,4 @@ COPY . .
 
 RUN pnpm run build
 
-CMD ["node", "dist/main.js"]
+CMD ["pnpm", "run", "start"]
